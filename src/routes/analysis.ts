@@ -1,4 +1,5 @@
 import type { FastifyPluginAsync } from 'fastify';
+import { Prisma } from '@prisma/client';
 import { z } from 'zod';
 
 export const analysisRoutes: FastifyPluginAsync = async (app) => {
@@ -40,7 +41,7 @@ export const analysisRoutes: FastifyPluginAsync = async (app) => {
       const updated = await app.prisma.analysis.update({ where: { documentId }, data: { summary } });
       return res.send({ ok: true, analysis: updated });
     } else {
-      const created = await app.prisma.analysis.create({ data: { documentId, summary, total: null, details: null } });
+      const created = await app.prisma.analysis.create({ data: { documentId, summary, total: null, details: Prisma.JsonNull } });
       return res.send({ ok: true, analysis: created });
     }
   });
