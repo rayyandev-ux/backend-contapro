@@ -42,7 +42,8 @@ RUN mkdir -p /app/uploads && chown -R node:node /app/uploads
 ENV NODE_ENV=production \
     PORT=8080 \
     LLM_BACKEND=python \
-    PYTHON_CMD=/app/python/.venv/bin/python
+    PYTHON_CMD=/app/python/.venv/bin/python \
+    NODE_OPTIONS=--experimental-specifier-resolution=node
 
 EXPOSE 8080
 
