@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.env
+uploads/
+uploads/tmp/
+cookies.txt
+headers.txt
+coverage/
+*.log
+.DS_Store
+python/.venv/
+python/__pycache__/
+tmp/
