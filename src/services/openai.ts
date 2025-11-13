@@ -1,9 +1,9 @@
 import OpenAI from 'openai';
 import crypto from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
-import { config } from '../config';
-import { runPythonOCR } from './pythonOCR';
-import { runPythonLLM } from './pythonLLM';
+import { config } from '../config.js';
+import { runPythonOCR } from './pythonOCR.js';
+import { runPythonLLM } from './pythonLLM.js';
 
 export function createOpenAI(app: FastifyInstance) {
   const apiKey = process.env.OPENAI_API_KEY;

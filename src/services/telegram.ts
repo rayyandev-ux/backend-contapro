@@ -2,7 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import sharp from 'sharp';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { createOpenAI } from './openai';
+import { createOpenAI } from './openai.js';
 
 type TelegramUpdate = {
   update_id: number;

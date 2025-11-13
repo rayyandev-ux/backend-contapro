@@ -1,6 +1,6 @@
 import type { FastifyPluginAsync } from 'fastify';
 import multipart from '@fastify/multipart';
-import { createOpenAI } from '../services/openai';
+import { createOpenAI } from '../services/openai.js';
 import sharp from 'sharp';
 import fs from 'node:fs/promises';
 import path from 'node:path';

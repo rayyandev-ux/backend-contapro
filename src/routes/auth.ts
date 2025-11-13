@@ -1,7 +1,7 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
-import { hashPassword, verifyPassword } from '../services/hash';
-import { config } from '../config';
+import { hashPassword, verifyPassword } from '../services/hash.js';
+import { config } from '../config.js';
 
 export const authRoutes: FastifyPluginAsync = async (app) => {
   const RegisterBody = z.object({ email: z.string().email(), password: z.string().min(6), name: z.string().optional() });
