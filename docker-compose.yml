@@ -1,19 +1,32 @@
 version: "3.9"
 services:
-  postgres:
-    image: postgres:16
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: contapro
+      - NODE_ENV=production
+      - PORT=8080
+      # Configura estas variables acorde a tu entorno
+      - DATABASE_URL=${DATABASE_URL}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_MODEL=${OPENAI_MODEL}
+      - JWT_SECRET=${JWT_SECRET}
+      - CACHE_TTL_SECONDS=${CACHE_TTL_SECONDS}
+      - RATE_LIMIT_MAX=${RATE_LIMIT_MAX}
+      - LLM_BACKEND=python
+      - PYTHON_CMD=/app/python/.venv/bin/python
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
     ports:
-      - "5432:5432"
+      - "8080:8080"
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - uploads:/app/uploads
     healthcheck:
-      test: ["CMD", "pg_isready", "-U", "postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
+      interval: 20s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
 volumes:
-  pgdata:
+  uploads:
