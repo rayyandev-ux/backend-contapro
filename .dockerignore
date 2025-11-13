@@ -1,0 +1,12 @@
+node_modules
+dist
+uploads
+.env
+.env*
+*.log
+coverage
+tests
+.DS_Store
+python/.venv
+docker-compose.yml
+.github
