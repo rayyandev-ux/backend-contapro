@@ -8,4 +8,5 @@ export const config = {
   adminEmail: process.env.ADMIN_EMAIL || '',
   telegramBotToken: process.env.TELEGRAM_BOT_TOKEN || '',
   telegramBotName: process.env.TELEGRAM_BOT_NAME || '',
+  cookieDomain: process.env.COOKIE_DOMAIN || '',
 };

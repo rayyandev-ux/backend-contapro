@@ -18,7 +18,13 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     const hashed = await hashPassword(password);
     const user = await app.prisma.user.create({ data: { email, password: hashed, name, role: config.adminEmail && email === config.adminEmail ? 'ADMIN' : 'USER' } });
     const token = app.jwt.sign({ sub: user.id }, { expiresIn: '7d' });
-    res.setCookie('session', token, { httpOnly: true, sameSite: 'lax', path: '/', secure: process.env.NODE_ENV === 'production' });
+    res.setCookie('session', token, {
+      httpOnly: true,
+      sameSite: 'none',
+      path: '/',
+      secure: process.env.NODE_ENV === 'production',
+      domain: config.cookieDomain || undefined,
+    });
     return res.send({ ok: true });
   });
 
@@ -37,12 +43,18 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       await app.prisma.user.update({ where: { id: user.id }, data: { role: 'ADMIN' } });
     }
     const token = app.jwt.sign({ sub: user.id }, { expiresIn: '7d' });
-    res.setCookie('session', token, { httpOnly: true, sameSite: 'lax', path: '/', secure: process.env.NODE_ENV === 'production' });
+    res.setCookie('session', token, {
+      httpOnly: true,
+      sameSite: 'none',
+      path: '/',
+      secure: process.env.NODE_ENV === 'production',
+      domain: config.cookieDomain || undefined,
+    });
     return res.send({ ok: true });
   });
 
   app.post('/logout', { schema: { summary: 'Logout' } }, async (_req, res) => {
-    res.clearCookie('session', { path: '/' });
+    res.clearCookie('session', { path: '/', domain: config.cookieDomain || undefined });
     return res.code(204).send();
   });
 
