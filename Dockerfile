@@ -52,3 +52,4 @@ HEALTHCHECK --interval=20s --timeout=3s --retries=5 CMD curl -fsS http://localho
 USER node
 
 CMD ["node", "dist/index.js"]
+
