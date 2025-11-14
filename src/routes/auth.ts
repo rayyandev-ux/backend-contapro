@@ -19,10 +19,11 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     const isLocalHost = host === 'localhost' || host === '127.0.0.1' || host === '::1' || host === '[::1]';
     const cfgDomain = (config.cookieDomain || '').trim();
     const domain = cfgDomain && cfgDomain !== 'localhost' && host.endsWith(cfgDomain) ? cfgDomain : undefined;
+    const sameSite: 'lax' | 'none' = isLocalHost ? 'lax' : 'none';
     return {
       httpOnly: true,
       // En localhost, usar Lax para evitar el bloqueo de Chrome (SameSite=None requiere Secure)
-      sameSite: (isLocalHost ? 'lax' : 'none') as const,
+      sameSite,
       path: '/',
       secure: isProd,
       domain,
