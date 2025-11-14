@@ -5,6 +5,7 @@ import helmet from '@fastify/helmet';
 import sensible from '@fastify/sensible';
 import rateLimit from '@fastify/rate-limit';
 import swagger from '@fastify/swagger';
+import oauth2 from '@fastify/oauth2';
 import jwt from '@fastify/jwt';
 import { config } from './config.js';
 import { prisma } from './plugins/prisma.js';
@@ -21,6 +22,7 @@ import { statsRoutes } from './routes/stats.js';
 import { integrationsRoutes } from './routes/integrations.js';
 import { TelegramService } from './services/telegram.js';
 import { analysisRoutes } from './routes/analysis.js';
+import { paymentsRoutes } from './routes/payments.js';
 
 async function buildServer() {
   const fastify = Fastify({ logger: true });
@@ -42,6 +44,29 @@ async function buildServer() {
   // Plugins
   await fastify.register(prisma);
 
+  // Google OAuth2 (opcional, requiere credenciales)
+  try {
+    const clientId = process.env.GOOGLE_CLIENT_ID?.trim();
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET?.trim();
+    const callbackUri = (process.env.GOOGLE_CALLBACK_URL || `http://localhost:${config.port}/api/auth/google/callback`).trim();
+    if (clientId && clientSecret) {
+      await fastify.register(oauth2, {
+        name: 'googleOAuth2',
+        scope: ['profile', 'email'],
+        credentials: {
+          client: { id: clientId, secret: clientSecret },
+          auth: oauth2.GOOGLE_CONFIGURATION,
+        },
+        startRedirectPath: '/api/auth/google',
+        callbackUri,
+      });
+    } else {
+      fastify.log.info('Google OAuth2 no configurado (faltan GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET).');
+    }
+  } catch (e) {
+    fastify.log.warn({ msg: 'Error configurando OAuth2', error: String(e) });
+  }
+
   // Routes
   await fastify.register(authRoutes, { prefix: '/api/auth' });
   await fastify.register(historyRoutes, { prefix: '/api/history' });
@@ -52,6 +77,7 @@ async function buildServer() {
   await fastify.register(documentsRoutes, { prefix: '/api/documents' });
   await fastify.register(analysisRoutes, { prefix: '/api/analysis' });
   await fastify.register(integrationsRoutes, { prefix: '/api/integrations' });
+  await fastify.register(paymentsRoutes, { prefix: '/api/payments' });
   await fastify.register(adminRoutes, { prefix: '/api/admin' });
   await fastify.register(statsRoutes, { prefix: '/api/stats' });
   await fastify.register(metricsRoutes, { prefix: '/metrics' });

@@ -24,11 +24,16 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends libvips curl python3 python3-venv build-essential && \
     rm -rf /var/lib/apt/lists/*
 
-# Copy app
-COPY --from=builder /app/node_modules ./node_modules
+# Install production dependencies
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
+
+# Copy Prisma schema and generate client in runtime
 COPY --from=builder /app/prisma ./prisma
+RUN npx prisma generate
+
+# Copy built app and python helpers
 COPY --from=builder /app/dist ./dist
-COPY package.json ./
 COPY python ./python
 
 # Python venv for OCR/LLM helpers

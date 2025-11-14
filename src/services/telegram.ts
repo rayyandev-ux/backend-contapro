@@ -155,8 +155,10 @@ export class TelegramService {
     }, analysisBuffer);
 
     const type = (extraction.type as 'FACTURA' | 'BOLETA') || 'BOLETA';
-    // Límite plan FREE: igual al flujo web
-    if (user.plan === 'FREE') {
+    // Límite plan según expiración de Premium
+    const now = new Date();
+    const premiumActivo = user.plan === 'PREMIUM' && user.planExpires && user.planExpires > now;
+    if (!premiumActivo) {
       const issued = new Date(extraction.issuedAt ?? Date.now());
       const start = new Date(issued.getFullYear(), issued.getMonth(), 1);
       const end = new Date(issued.getFullYear(), issued.getMonth() + 1, 0, 23, 59, 59, 999);

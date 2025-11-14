@@ -66,11 +66,13 @@ export const uploadRoutes: FastifyPluginAsync = async (app) => {
 
     app.log.info({ msg: 'upload: extraction summary', summary: extraction?.summary, totals: extraction?.totals, provider: extraction?.provider });
 
-    // Enforce Free plan limits
+    // Enforce plan limits considering Premium expiration
     const user = await app.prisma.user.findUnique({ where: { id: userId } });
     if (!user) return res.unauthorized('No autenticado');
     const type = extraction.type as 'FACTURA' | 'BOLETA';
-    if (user.plan === 'FREE') {
+    const now = new Date();
+    const premiumActivo = user.plan === 'PREMIUM' && user.planExpires && user.planExpires > now;
+    if (!premiumActivo) {
       const issued = new Date(extraction.issuedAt ?? Date.now());
       const start = new Date(issued.getFullYear(), issued.getMonth(), 1);
       const end = new Date(issued.getFullYear(), issued.getMonth() + 1, 0, 23, 59, 59, 999);

@@ -35,11 +35,24 @@ model User {
   role       Role     @default(USER)
   plan       Plan     @default(FREE)
   telegramId String?
+  // Verificación de email
+  emailVerified      Boolean  @default(false)
+  verificationCode   String?
+  verificationExpires DateTime?
+  // Suscripción / Trial
+  trialEnds          DateTime?
+  planExpires        DateTime?
+  // Recuperación de contraseña
+  resetCode           String?
+  resetExpires        DateTime?
+  // OAuth
+  googleId   String?  @unique
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   documents  Document[]
   expenses   Expense[]
   budgets    Budget[]
+  payments   Payment[]
 }
 
 model Document {
@@ -110,4 +123,18 @@ model Expense {
   documentId  String?     @unique
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
+}
+
+model Payment {
+  id        String   @id @default(uuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  provider  String   // e.g., FLOW
+  orderId   String   @unique
+  period    String   // MONTHLY | ANNUAL
+  currency  String   // USD | PEN
+  amount    Float
+  status    String   // PENDING | PAID | CANCELLED
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

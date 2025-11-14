@@ -77,10 +77,12 @@ export const expensesRoutes: FastifyPluginAsync = async (app) => {
     if (!parse.success) return res.badRequest('Datos inválidos');
     const data = parse.data;
 
-    // Enforce FREE plan limits: max 10 facturas and 10 boletas per month
+    // Enforce plan limits considering Premium expiration
     const user = await app.prisma.user.findUnique({ where: { id: userId } });
     if (!user) return res.unauthorized('No autenticado');
-    if (user.plan === 'FREE') {
+    const now = new Date();
+    const premiumActivo = user.plan === 'PREMIUM' && user.planExpires && user.planExpires > now;
+    if (!premiumActivo) {
       const issued = new Date(data.issuedAt);
       const start = new Date(issued.getFullYear(), issued.getMonth(), 1);
       const end = new Date(issued.getFullYear(), issued.getMonth() + 1, 0, 23, 59, 59, 999);
