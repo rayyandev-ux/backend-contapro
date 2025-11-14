@@ -23,26 +23,35 @@ export const paymentsRoutes: FastifyPluginAsync = async (app) => {
     if (!userId) return;
     const body: any = req.body || {};
     const plan: 'MONTHLY' | 'ANNUAL' = (body.plan === 'ANNUAL' ? 'ANNUAL' : 'MONTHLY');
-    const currency: 'USD' | 'PEN' = (body.currency === 'PEN' ? 'PEN' : 'USD');
+    const currency: 'USD' | 'PEN' = 'USD';
 
     const amountUsd = plan === 'MONTHLY' ? 4.99 : 24.99;
-    const amount = currency === 'USD' ? amountUsd : Number((amountUsd * config.usdToPen).toFixed(2));
+    const amount = amountUsd;
     const user = await app.prisma.user.findUnique({ where: { id: userId }, select: { email: true } });
     if (!user) return res.unauthorized('No autenticado');
 
-    const orderId = `cp_${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
+    const orderId = `cp${Math.random().toString(36).slice(2,10)}${Date.now().toString(36).slice(-4)}`; // ~14 chars, alphanumeric
     await app.prisma.payment.create({ data: { userId, provider: 'FLOW', orderId, period: plan, currency, amount, status: 'PENDING' } });
 
     const subject = `ContaPRO Premium ${plan === 'MONTHLY' ? 'Mensual' : 'Anual'}`;
     const urlReturn = `${config.frontendUrl}/payments/success`;
     const urlNotify = `${config.backendPublicUrl}/api/payments/flow/webhook`;
     try {
-      const { url } = await createPaymentLink({ email: user.email, amount, currency, orderId, subject, urlReturn, urlNotify });
+      const flowPlan = plan === 'ANNUAL' ? config.flowAnnualPlan : config.flowMonthlyPlan;
+      const { url } = await createPaymentLink({ email: user.email, amount, currency, orderId, subject, urlReturn, urlNotify, flowPlan });
+      // Log diagnostic info for troubleshooting redirect issues
+      app.log.info({ orderId, plan, currency, flowPlan, url }, 'Flow checkout created');
       return res.send({ ok: true, redirectUrl: url });
     } catch (e: any) {
       await app.prisma.payment.update({ where: { orderId }, data: { status: 'CANCELLED' } }).catch(() => {});
       return res.internalServerError(e?.message || 'Error creando pago');
     }
+  });
+
+  // Defensive handler: some clients may attempt GET to this endpoint.
+  // Keep semantics clear by responding with Method Not Allowed and guidance.
+  app.get('/checkout', async (req, res) => {
+    res.code(405).send({ ok: false, error: 'Method Not Allowed', message: 'Use POST /api/payments/checkout' });
   });
 
   app.post('/flow/webhook', { schema: { summary: 'Flow webhook' } }, async (req, res) => {

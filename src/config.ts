@@ -1,4 +1,6 @@
-import 'dotenv/config';
+import dotenv from 'dotenv';
+// Ensure .env values override any existing environment variables (e.g., system-level)
+dotenv.config({ override: true });
 
 export const config = {
   port: Number(process.env.PORT || 8080),
@@ -13,6 +15,9 @@ export const config = {
   backendPublicUrl: process.env.BACKEND_PUBLIC_URL || 'http://localhost:8080',
   flowApiKey: process.env.FLOW_API_KEY || '',
   flowSecretKey: process.env.FLOW_SECRET_KEY || '',
-  flowBaseUrl: process.env.FLOW_BASE_URL || 'https://www.flow.com.pe/api',
+  flowBaseUrl: process.env.FLOW_BASE_URL || 'https://www.flow.cl/api',
   usdToPen: Number(process.env.USD_TO_PEN || 3.8),
+  flowMonthlyPlan: process.env.FLOW_PLAN_MONTH_ID || 'contapro-month',
+  flowAnnualPlan: process.env.FLOW_PLAN_YEAR_ID || 'contapro-year',
+  flowForcePayment: String(process.env.FLOW_FORCE_PAYMENT || '').toLowerCase() === 'true',
 };

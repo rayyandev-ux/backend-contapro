@@ -12,6 +12,17 @@ export const expensesRoutes: FastifyPluginAsync = async (app) => {
     categoryId: z.string().optional(),
   });
 
+  const UpdateExpenseBody = z.object({
+    type: z.enum(['FACTURA', 'BOLETA']).optional(),
+    issuedAt: z.string().optional(),
+    provider: z.string().min(1).optional(),
+    description: z.string().nullable().optional(),
+    amount: z.number().positive().optional(),
+    currency: z.string().optional(),
+    // Permitir desasignar categoría con null
+    categoryId: z.string().nullable().optional(),
+  });
+
   function requireAuth(req: any, res: any): string | void {
     const token = req.cookies.session;
     if (!token) {
@@ -67,6 +78,31 @@ export const expensesRoutes: FastifyPluginAsync = async (app) => {
     if (!exp || exp.userId !== userId) return res.notFound('No encontrado');
     await app.prisma.expense.delete({ where: { id } });
     return res.code(204).send();
+  });
+
+  app.put('/:id', { schema: { summary: 'Update expense' } }, async (req, res) => {
+    const userId = requireAuth(req, res);
+    if (!userId) return;
+    const id = (req.params as any).id as string;
+
+    const exp = await app.prisma.expense.findUnique({ where: { id } });
+    if (!exp || exp.userId !== userId) return res.notFound('No encontrado');
+
+    const parse = UpdateExpenseBody.safeParse(req.body);
+    if (!parse.success) return res.badRequest('Datos inválidos');
+    const data = parse.data;
+
+    const updateData: any = {};
+    if (data.type) updateData.type = data.type;
+    if (data.issuedAt) updateData.issuedAt = new Date(data.issuedAt);
+    if (typeof data.provider === 'string') updateData.provider = data.provider;
+    if (data.description !== undefined) updateData.description = data.description ?? null;
+    if (typeof data.amount === 'number') updateData.amount = data.amount;
+    if (typeof data.currency === 'string') updateData.currency = data.currency;
+    if (data.categoryId !== undefined) updateData.categoryId = data.categoryId ?? null;
+
+    const updated = await app.prisma.expense.update({ where: { id }, data: updateData, include: { category: true, document: true } });
+    return res.send({ ok: true, item: updated });
   });
 
   app.post('/', { schema: { summary: 'Create manual expense' } }, async (req, res) => {

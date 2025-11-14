@@ -29,7 +29,7 @@ async function buildServer() {
 
   await fastify.register(sensible);
   await fastify.register(helmet);
-  await fastify.register(cors, { origin: true, credentials: true });
+  await fastify.register(cors, { origin: true, credentials: true, methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'] });
   await fastify.register(cookie, { hook: 'onRequest' });
   await fastify.register(jwt, { secret: config.jwtSecret });
   await fastify.register(rateLimit, { max: config.rateLimitMax, timeWindow: '1 minute' });
@@ -52,7 +52,7 @@ async function buildServer() {
     if (clientId && clientSecret) {
       await fastify.register(oauth2, {
         name: 'googleOAuth2',
-        scope: ['profile', 'email'],
+        scope: ['openid', 'profile', 'email'],
         credentials: {
           client: { id: clientId, secret: clientSecret },
           auth: oauth2.GOOGLE_CONFIGURATION,

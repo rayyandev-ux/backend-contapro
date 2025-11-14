@@ -182,11 +182,25 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       return res.serviceUnavailable('OAuth no configurado');
     }
     try {
-      const token = await (app as any).googleOAuth2.getAccessTokenFromAuthorizationCodeFlow(req);
-      const accessToken: string = token?.access_token;
-      if (!accessToken) return res.badRequest('Token inválido');
-      const uinfoRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', { headers: { Authorization: `Bearer ${accessToken}` } });
-      const uinfo = await uinfoRes.json().catch(() => ({}));
+      const oauthResult = await (app as any).googleOAuth2.getAccessTokenFromAuthorizationCodeFlow(req, res);
+      let accessToken: string | undefined = (oauthResult as any)?.access_token
+        ?? (oauthResult as any)?.token?.access_token
+        ?? (oauthResult as any)?.accessToken
+        ?? (oauthResult as any)?.token?.accessToken;
+
+      let uinfo: any = {};
+      if (accessToken) {
+        const uinfoRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', { headers: { Authorization: `Bearer ${accessToken}` } });
+        uinfo = await uinfoRes.json().catch(() => ({}));
+      } else {
+        const idToken: string | undefined = (oauthResult as any)?.id_token ?? (oauthResult as any)?.token?.id_token;
+        if (!idToken) return res.badRequest('Token inválido');
+        const parts = idToken.split('.');
+        if (parts.length === 3) {
+          const payloadJson = Buffer.from(parts[1].replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString();
+          try { uinfo = JSON.parse(payloadJson); } catch { uinfo = {}; }
+        }
+      }
       const email = String(uinfo?.email || '').toLowerCase();
       const googleId = String(uinfo?.sub || '');
       const emailVerified = Boolean(uinfo?.email_verified);
@@ -203,6 +217,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
             role: email === config.adminEmail ? 'ADMIN' : 'USER',
             googleId,
             emailVerified: emailVerified || true,
+            trialEnds: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
           },
         });
       } else if (!user.googleId) {

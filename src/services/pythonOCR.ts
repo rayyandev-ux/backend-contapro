@@ -56,12 +56,16 @@ export async function runPythonOCR(app: FastifyInstance, buffer: Buffer, mimeTyp
           await fs.access(candidate);
           pythonCmd = candidate;
         } catch {
-          pythonCmd = path.join(process.cwd(), 'python', pythonEnv);
+          // Si el candidato no existe (p.ej. ruta de Docker /app/...), usar venv por defecto local
+          pythonCmd = defaultVenv;
+          try { await fs.access(pythonCmd); } catch { pythonCmd = isWin ? 'py' : 'python'; }
         }
       }
     } else {
       pythonCmd = defaultVenv;
+      try { await fs.access(pythonCmd); } catch { pythonCmd = isWin ? 'py' : 'python'; }
     }
+    app.log.info({ msg: 'python ocr: resolved command', pythonCmd });
     const child = spawn(pythonCmd, [pyPath, tmpFile], { stdio: ['ignore', 'pipe', 'pipe'], cwd: process.cwd() });
 
     const chunks: Buffer[] = [];
@@ -69,7 +73,10 @@ export async function runPythonOCR(app: FastifyInstance, buffer: Buffer, mimeTyp
     child.stdout.on('data', (d) => chunks.push(Buffer.from(d)));
     child.stderr.on('data', (d) => errs.push(Buffer.from(d)));
 
-    const exitCode: number = await new Promise((resolve) => child.on('close', resolve));
+    const exitCode: number = await new Promise((resolve) => {
+      child.on('close', (code) => resolve(typeof code === 'number' ? code : -1));
+      child.on('error', () => resolve(-1));
+    });
     const out = Buffer.concat(chunks).toString('utf8').trim();
     const err = Buffer.concat(errs).toString('utf8').trim();
 
